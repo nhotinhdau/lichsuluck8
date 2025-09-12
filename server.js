@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // WSS URL
-const WS_URL = "wss://pmcn.space/game_68gb/ws?id=Cskhtool11&key=trantuanbo57";
+const WS_URL = "wss://adpmcn.fun/game_luck8/ws?id=Cskhtool11&key=AnhDaiTo";
 // Biến lưu phiên mới nhất
 let latestResult = null;
 
@@ -65,6 +65,7 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server đang chạy trên cổng ${PORT}`);
 });
+
 
 
 
