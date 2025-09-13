@@ -1,74 +1,63 @@
 const express = require('express');
-const WebSocket = require('ws');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// WSS URL
-const WS_URL = "wss://adpmcn.fun/game_luck8/ws?id=Cskhtool11&key=AnhDaiTo";
+// URL API gốc (thay link thật của bạn vào đây)
+const API_URL = "https://1.bot/GetNewLottery/LT_TaixiuMD5";
+
 // Biến lưu phiên mới nhất
 let latestResult = null;
 
-// Kết nối WebSocket
-const ws = new WebSocket(WS_URL);
-
-ws.on('open', () => {
-    console.log("Đã kết nối WSS");
-});
-
-ws.on('message', (data) => {
+// Hàm fetch API định kỳ
+async function fetchResult() {
     try {
-        const json = JSON.parse(data);
+        const response = await axios.get(API_URL);
+        const json = response.data;
 
-        // Lấy thông tin cần thiết
-        latestResult = {
-            Phien: json.Phien,
-            Xuc_xac_1: json.Xuc_xac_1,
-            Xuc_xac_2: json.Xuc_xac_2,
-            Xuc_xac_3: json.Xuc_xac_3,
-            Tong: json.Tong,
-            Ket_qua: json.Ket_qua
-        };
+        if (json.state === 1 && json.data) {
+            const openCode = json.data.OpenCode.split(',').map(Number);
+            const tong = openCode.reduce((a, b) => a + b, 0);
+            const ketQua = (tong >= 11) ? "Tài" : "Xỉu";
 
-        console.log("Phiên mới nhất:", latestResult);
+            latestResult = {
+                Phien: json.data.Expect,
+                Xuc_xac_1: openCode[0],
+                Xuc_xac_2: openCode[1],
+                Xuc_xac_3: openCode[2],
+                Tong: tong,
+                Ket_qua: ketQua,
+                OpenTime: json.data.OpenTime
+            };
 
+            console.log("🎲 Phiên mới nhất:", latestResult);
+        }
     } catch (err) {
-        console.error("Lỗi parse WSS message:", err);
+        console.error("❌ Lỗi fetch API:", err.message);
     }
-});
+}
 
-ws.on('close', () => {
-    console.log("Kết nối WSS đã đóng");
-});
-
-ws.on('error', (err) => {
-    console.error("Lỗi WSS:", err);
-});
+// Gọi fetchResult mỗi 3 giây
+setInterval(fetchResult, 3000);
 
 // REST API lấy phiên mới nhất
 app.get('/api/taixiu/ws', (req, res) => {
     if (!latestResult) {
         return res.status(503).json({
-            error: "Chưa có dữ liệu WSS",
+            error: "Chưa có dữ liệu API",
             details: "Vui lòng thử lại sau vài giây."
         });
     }
-
     res.json(latestResult);
 });
 
 // Endpoint mặc định
 app.get('/', (req, res) => {
-    res.send('API WSS Tài Xỉu. Truy cập /api/taixiu/ws để xem phiên mới nhất.');
+    res.send('API HTTP Tài Xỉu. Truy cập /api/taixiu/ws để xem phiên mới nhất.');
 });
 
+// Khởi chạy server
 app.listen(PORT, () => {
-    console.log(`Server đang chạy trên cổng ${PORT}`);
+    console.log(`🚀 Server đang chạy trên cổng ${PORT}`);
 });
-
-
-
-
-
-
-
